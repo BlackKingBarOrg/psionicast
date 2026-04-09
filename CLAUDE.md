@@ -4,129 +4,61 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Casmitter is a Ruby on Rails 8.0 podcast application that serves as a platform for hosting and distributing podcast episodes. It uses a modern Rails stack with Turbo, Stimulus, and Tailwind CSS for styling.
-
-## Core Architecture
-
-### Models
-- **Episode**: Central model representing podcast episodes with status (draft/published/hidden), metadata, and file information
-- **Attendee**: Base model for people involved in episodes, with Single Table Inheritance (STI) pattern
-- **Host**: Inherits from Attendee, represents podcast hosts
-- **Guest**: Inherits from Attendee, represents podcast guests  
-- **Attendance**: Join table connecting Episodes and Attendees with role information (host/guest)
-- **User/Session**: Authentication models using bcrypt
-
-### Key Features
-- Episodes have file URIs pointing to audio files, with duration and file size tracking
-- Markdown rendering for episode descriptions using Redcarpet
-- RSS feed generation for podcast distribution
-- Episode lookup by both slug and number
-- Social links storage as JSON in attendees
-- File size fetching from remote URLs via custom FileUtils module
-
-### Database
-- Development/Test: SQLite3 
-- Production: PostgreSQL with separate databases for cache, queue, and cable
-- Uses Solid Cache, Solid Queue, and Solid Cable for Rails infrastructure
+Teahour 2.0 -- a Ruby on Rails 8.0 podcast platform (service name: `casmitter`). Chinese-language tech podcast hosted at teahour.dev. Rails stack with Turbo, Stimulus, Tailwind CSS 4, Propshaft.
 
 ## Common Commands
 
-### Development
 ```bash
-# Start the Rails server
+# Dev server
 bin/rails server
+bin/rails tailwindcss:watch          # asset file watcher (separate terminal)
 
-# Start with file watching for assets
-bin/rails tailwindcss:watch
+# Tests
+bin/rails test                       # all tests (except system)
+bin/rails test test/models/episode_test.rb       # single file
+bin/rails test test/models/episode_test.rb:27    # single test by line
 
-# Database operations
-bin/rails db:create
+# Lint
+bundle exec rubocop                  # check
+bundle exec rubocop -a               # safe auto-fix
+bundle exec brakeman                 # security scan
+
+# Episode management (rake tasks in lib/tasks/publish.rake)
+bin/rails publish:episode_N          # publish episode N
+bin/rails publish:delete_episode_N   # delete episode N
+
+# DB
+bin/rails db:seed                    # seeds episode 1 + hosts (destructive: deletes all first)
 bin/rails db:migrate
-bin/rails db:seed
 ```
 
-### Testing
-```bash
-# Run all tests (except system tests)
-bin/rails test
+## Architecture
 
-# Run specific test file
-bin/rails test test/models/episode_test.rb
+### Data Model
 
-# Run test with line number
-bin/rails test test/models/episode_test.rb:27
+- **Episode**: status enum (draft:0, published:1, hidden:2), looked up by `slug` OR `number` (see `EpisodesController#set_episode`). `length` = file size in bytes, `duration` = seconds.
+- **Attendee**: STI base class. Subtypes: **Host**, **Guest**. Stores `social_links` as JSON via `ActiveRecord::Store`.
+- **Attendance**: join table between Episode and Attendee. `role` enum (host:0, guest:1).
+- **User/Session**: auth scaffolded with bcrypt but routes are commented out -- not active.
 
-# Run system tests
-bin/rails test:system
-```
+### Episode Publishing Flow
 
-### Linting & Code Quality
-```bash
-# Run RuboCop linter
-bundle exec rubocop
+Episode 1 is created via `db/seeds.rb`. Episodes 2+ each have a dedicated rake task in `lib/tasks/publish.rake`. Each task:
+1. Looks up existing Hosts/Guests (creates Guest if new)
+2. Fetches remote file size via `FileUtils.get_remote_file_size` (HTTP HEAD request)
+3. Creates Episode with description read from `db/seeds/episode_N_desc.md` (markdown)
+4. Creates Attendance records linking hosts/guests
 
-# Auto-fix RuboCop issues (safe)
-bundle exec rubocop -a
+### RSS Feed
 
-# Auto-fix all RuboCop issues (including unsafe)
-bundle exec rubocop -A
+`/feed` and `/rss` routes serve `episodes/index.rss.builder` -- iTunes/Google Play compatible RSS with `itunes:*` and `googleplay:*` namespace tags. Episode descriptions rendered as HTML via Redcarpet markdown.
 
-# Run Brakeman security scanner
-bundle exec brakeman
-```
+### Key Patterns
 
-### Episode Management
-```bash
-# Publish episodes (custom rake tasks)
-bin/rails publish:episode_2
-bin/rails publish:episode_3
-bin/rails publish:episode_4
+- **`lib/file_utils.rb`**: Custom `FileUtils` module (shadows Ruby stdlib's `FileUtils`) with `get_remote_file_size(url)` -- uses `Net::HTTP::Head` to get Content-Length.
+- **Episode descriptions**: Stored as markdown in `db/seeds/episode_N_desc.md`, rendered via Redcarpet at publish time and in RSS feed.
+- **Routes are read-only**: Only `show` and `index` for episodes/hosts/guests. No create/edit/delete via web.
 
-# Delete episodes
-bin/rails publish:delete_episode_2
-bin/rails publish:delete_episode_3
-bin/rails publish:delete_episode_4
-```
+### Deployment
 
-### Asset Management
-```bash
-# Build Tailwind CSS
-bin/rails tailwindcss:build
-
-# Watch for Tailwind changes
-bin/rails tailwindcss:watch
-
-# Precompile all assets
-bin/rails assets:precompile
-```
-
-## Development Workflow
-
-When working on this codebase:
-
-1. **Database Changes**: Always create migrations for schema changes and run them in development
-2. **Episode Publishing**: Use the custom rake tasks in `lib/tasks/publish.rake` for episode management
-3. **File Size Tracking**: The `FileUtils.get_remote_file_size` method fetches remote file sizes for episodes
-4. **Markdown Content**: Episode descriptions are stored in `db/seeds/` as markdown files and rendered using Redcarpet
-5. **Testing**: Run tests after changes, especially for models and controllers
-6. **Linting**: Run RuboCop to maintain code style consistency
-
-## Deployment
-
-- Uses Kamal for deployment with Docker
-- Configured for single-server deployment with PostgreSQL
-- SSL enabled via Let's Encrypt
-- Persistent storage for SQLite files in development
-- Assets are fingerprinted and cached between deployments
-
-## Key File Locations
-
-- Models: `app/models/`
-- Controllers: `app/controllers/`
-- Views: `app/views/`
-- Routes: `config/routes.rb`
-- Database config: `config/database.yml`
-- Deployment config: `config/deploy.yml`
-- Custom utilities: `lib/`
-- Episode content: `db/seeds/`
-- Tests: `test/`
+Kamal with Docker, targeting amd64. Production uses PostgreSQL. Dev/test uses SQLite3.
