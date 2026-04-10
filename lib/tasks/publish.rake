@@ -252,7 +252,7 @@ namespace :publish do
       slug: '7',
       duration: 5476,
       published_at: Time.zone.now,
-      cover_url: "https://assets.teahour.dev/teahour2-ep7-cover.png",
+      cover_url: "https://assets.teahour.dev/teahour2-ep7-cover-2.png",
       length: file_size
     )
 
