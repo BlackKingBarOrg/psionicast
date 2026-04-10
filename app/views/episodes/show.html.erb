@@ -1,3 +1,15 @@
+<% content_for :meta_tags do %>
+  <meta property="og:title" content="<%= @episode.name %> - Teahour 2.0">
+  <meta property="og:description" content="<%= @episode.summary %>">
+  <meta property="og:image" content="<%= @episode.cover_image_url %>">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="<%= episode_url(@episode.slug) %>">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="<%= @episode.name %> - Teahour 2.0">
+  <meta name="twitter:description" content="<%= @episode.summary %>">
+  <meta name="twitter:image" content="<%= @episode.cover_image_url %>">
+<% end %>
+
 <%= render layout: 'shared/page_container' do %>
   <%= render 'shared/page_header' %>
   <img alt="Teahour 2.0" class="w-full mb-3" height="400" src="<%= asset_path("omshow.png")%>" width="1200"/>
