@@ -227,4 +227,48 @@ namespace :publish do
     episode_6.destroy
     puts "Episode 6 deleted!"
   end
+
+  desc "Publish Episode 7"
+  task episode_7: :environment do
+    terry = Host.find_by(name: "Terry Tai")
+    howard = Host.find_by(name: "Howard Ye")
+    mike = Guest.find_by(name: "Mike Chong")
+    unless mike
+      mike = Guest.create!(name: "Mike Chong", avatar_url: "https://assets.teahour.dev/mike.jpg", social_links: {'X' => 'https://x.com/mike_chong_zh', 'YouTube' => 'https://www.youtube.com/@MikeChongZh'})
+    end
+
+    file_uri = "https://assets.teahour.dev/teahour2_7_1.mp3"
+    file_size = FileUtils.get_remote_file_size(file_uri)
+    puts "File size: #{file_size} bytes"
+
+    episode_7 = Episode.create!(
+      name: "Vibe Coding 好上瘾",
+      file_uri: file_uri,
+      summary: "抱歉, 因为 Vibe Coding 乐不思蜀了。这一期我们和 Howard & Mike 聊聊我们是怎么实践（玩）的。",
+      desc: File.read(Rails.root.join('db', 'seeds', 'episode_7_desc.md')),
+      status: 1,
+      keywords: 'vibe coding, ai, claude code, cursor, programming',
+      number: 7,
+      slug: '7',
+      duration: 5476,
+      published_at: Time.zone.now,
+      cover_url: "https://assets.teahour.dev/teahour2-ep7-cover.png",
+      length: file_size
+    )
+
+    puts "Creating attendances..."
+    Attendance.create!(attendee: terry, episode: episode_7, role: 0)
+    Attendance.create!(attendee: howard, episode: episode_7, role: 0)
+    Attendance.create!(attendee: mike, episode: episode_7, role: 1)
+
+    puts "Episode 7 published!"
+  end
+
+  desc "Delete Episode 7"
+  task delete_episode_7: :environment do
+    episode_7 = Episode.find_by(number: 7)
+    Attendance.where(episode: episode_7).destroy_all
+    episode_7.destroy
+    puts "Episode 7 deleted!"
+  end
 end
