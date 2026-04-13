@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_17_022700) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_26_154144) do
   create_table "attendances", force: :cascade do |t|
     t.integer "attendee_id"
     t.integer "episode_id"
@@ -39,12 +39,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_17_022700) do
     t.string "summary"
     t.integer "status", default: 0, null: false
     t.string "keywords"
-    t.integer "number", default: 999, null: false
+    t.integer "number"
     t.string "slug"
     t.datetime "published_at"
     t.integer "duration"
     t.string "cover_url"
     t.integer "length"
+    t.string "preview_token"
+    t.index ["number"], name: "index_episodes_on_number_published", unique: true, where: "status = 1"
+    t.index ["preview_token"], name: "index_episodes_on_preview_token", unique: true
   end
 
   create_table "sessions", force: :cascade do |t|

@@ -35,3 +35,4 @@
 - [Waking Up](https://www.wakingup.com/)
 - [jhanas](https://nintil.com/jhanas)
 - [Deep Work](https://www.amazon.com/Deep-Work-Focused-Success-Distracted/dp/1455586692)
+- [NO FEES on web transactions. Game over for the Apple Tax](https://x.com/TimSweeneyEpic/status/1917706848251134055)
